@@ -2,7 +2,9 @@
 
 namespace Spatie\LaravelPasskeys\Database\Factories;
 
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Database\Eloquent\Model;
 use Spatie\LaravelPasskeys\Models\Passkey;
 use Spatie\LaravelPasskeys\Support\Config;
 use Symfony\Component\Uid\Uuid;
@@ -21,6 +23,7 @@ class PasskeyFactory extends Factory
         return [
             'name' => $this->faker->word,
             'authenticatable_id' => $authModel::factory(),
+            'authenticatable_type' => $authModel,
             'credential_id' => $this->faker->sentence,
             'data' => $this->dummyPublicKeyCredentialSource(),
         ];

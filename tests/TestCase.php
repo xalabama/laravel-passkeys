@@ -40,10 +40,20 @@ class TestCase extends Orchestra
         config()->set('passkeys.models.authenticatable', User::class);
         config()->set('app.key', Encrypter::generateKey(config('app.cipher')));
 
-        $migration = include __DIR__.'/../vendor/orchestra/testbench-core/laravel/migrations/0001_01_01_000000_testbench_create_users_table.php';
-        $migration->up();
+        $this->setUpMigrations();
+    }
 
-        $migration = include __DIR__.'/../database/migrations/create_passkeys_table.php.stub';
-        $migration->up();
+    protected function setUpMigrations(): void
+    {
+        $migrations = [
+            '/../vendor/orchestra/testbench-core/laravel/migrations/0001_01_01_000000_testbench_create_users_table.php',
+            '/../database/migrations/create_passkeys_table.php.stub',
+            '/../database/migrations/make_passkeys_authenticatable_polymorphic.php.stub',
+        ];
+
+        array_any($migrations, function ($migrationPath) {
+            $migration = include __DIR__ . $migrationPath;
+            $migration->up();
+        });
     }
 }
