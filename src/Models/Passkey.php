@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Spatie\LaravelPasskeys\Database\Factories\PasskeyFactory;
 use Spatie\LaravelPasskeys\Support\Config;
 use Spatie\LaravelPasskeys\Support\Serializer;
@@ -44,11 +45,9 @@ class Passkey extends Model
         );
     }
 
-    public function authenticatable(): BelongsTo
+    public function authenticatable(): MorphTo
     {
-        $authenticatableModel = Config::getAuthenticatableModel();
-
-        return $this->belongsTo($authenticatableModel);
+        return $this->morphTo('authenticatable');
     }
 
     protected static function newFactory(): Factory

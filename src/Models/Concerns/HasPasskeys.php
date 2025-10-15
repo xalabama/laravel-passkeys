@@ -2,7 +2,7 @@
 
 namespace Spatie\LaravelPasskeys\Models\Concerns;
 
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 /**
  * @mixin \Illuminate\Database\Eloquent\Model
@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 interface HasPasskeys
 {
-    public function passkeys(): HasMany;
+    public function passkeys(): MorphMany;
 
     public function getPassKeyName(): string;
 
