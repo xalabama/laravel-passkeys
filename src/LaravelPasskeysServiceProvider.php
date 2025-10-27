@@ -19,7 +19,10 @@ class LaravelPasskeysServiceProvider extends PackageServiceProvider
         $package
             ->name('laravel-passkeys')
             ->hasConfigFile()
-            ->hasMigration('create_passkeys_table')
+            ->hasMigrations(
+                'create_passkeys_table',
+                'make_passkeys_authenticatable_polymorphic'
+            )
             ->hasViews()
             ->hasTranslations();
 

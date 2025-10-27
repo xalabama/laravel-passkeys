@@ -7,6 +7,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
 use Spatie\LaravelPasskeys\Actions\FindPasskeyToAuthenticateAction;
+use Spatie\LaravelPasskeys\Concerns\CanResolveContext;
 use Spatie\LaravelPasskeys\Events\PasskeyUsedToAuthenticateEvent;
 use Spatie\LaravelPasskeys\Http\Requests\AuthenticateUsingPasskeysRequest;
 use Spatie\LaravelPasskeys\Models\Passkey;
@@ -14,17 +15,12 @@ use Spatie\LaravelPasskeys\Support\Config;
 
 class AuthenticateUsingPasskeyController
 {
+    use CanResolveContext;
+
     public function __invoke(AuthenticateUsingPasskeysRequest $request)
     {
-        $findAuthenticatableUsingPasskey = Config::getAction(
-            'find_passkey',
-            FindPasskeyToAuthenticateAction::class
-        );
-
-        $passkey = $findAuthenticatableUsingPasskey->execute(
-            $request->get('start_authentication_response'),
-            Session::get('passkey-authentication-options'),
-        );
+        $context = $this->resolveContext($request);
+        $passkey = $this->findPasskey($request, $context);
 
         if (! $passkey) {
             return $this->invalidPasskeyResponse();
@@ -37,27 +33,40 @@ class AuthenticateUsingPasskeyController
             return $this->invalidPasskeyResponse();
         }
 
-        $this->logInAuthenticatable($authenticatable, $request->boolean('remember'));
+        $this->logInAuthenticatable($authenticatable, $context, $request->boolean('remember'));
 
         $this->firePasskeyEvent($passkey, $request);
 
-        return $this->validPasskeyResponse($request);
+        return $this->validPasskeyResponse($request, $context);
     }
 
-    protected function logInAuthenticatable(Authenticatable $authenticatable, bool $remember = false): self
+    protected function findPasskey(Request $request, string $context): ?Passkey
     {
-        auth()->login($authenticatable, $remember);
+        $action = Config::getAction('find_passkey',FindPasskeyToAuthenticateAction::class);
+
+        return $action->execute(
+            $request->get('start_authentication_response'),
+            Session::get('passkey-authentication-options'),
+            $context
+        );
+    }
+
+    protected function logInAuthenticatable(Authenticatable $authenticatable, string $context, bool $remember = false): self
+    {
+        $guard = Config::getGuard($context);
+
+        auth($guard)->login($authenticatable, $remember);
 
         Session::regenerate();
 
         return $this;
     }
 
-    protected function validPasskeyResponse(Request $request): RedirectResponse
+    protected function validPasskeyResponse(Request $request, string $context): RedirectResponse
     {
         $url = Session::has('passkeys.redirect')
             ? Session::pull('passkeys.redirect')
-            : Config::getRedirectAfterLogin();
+            : Config::getRedirectAfterLogin($context);
 
         return redirect($url);
     }

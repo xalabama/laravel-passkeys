@@ -1,7 +1,7 @@
 <div>
-    @include('passkeys::components.partials.authenticateScript')
+    @include('passkeys::components.partials.authenticateScript', ['route' => $optionsRoute])
 
-    <form id="passkey-login-form" method="POST" action="{{ route('passkeys.login') }}">
+    <form id="passkey-login-form" method="POST" action="{{ route($route) }}">
         @csrf
     </form>
 

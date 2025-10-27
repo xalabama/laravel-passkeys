@@ -29,6 +29,20 @@ class PasskeyFactory extends Factory
         ];
     }
 
+    /**
+     * @param class-string<Authenticatable> $authenticatable
+     * @return PasskeyFactory
+     */
+    public function forAuthenticatable(string $authenticatable)
+    {
+        return $this->state(function (array $attributes) use ($authenticatable) {
+            $attributes['authenticatable_type'] = $authenticatable;
+            $attributes['authenticatable_id'] = $authenticatable::factory();
+
+            return $attributes;
+        });
+    }
+
     protected function dummyPublicKeyCredentialSource(): PublicKeyCredentialSource
     {
         return PublicKeyCredentialSource::create(

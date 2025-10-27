@@ -3,26 +3,39 @@
 namespace Spatie\LaravelPasskeys\Livewire;
 
 use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
 use Spatie\LaravelPasskeys\Actions\GeneratePasskeyRegisterOptionsAction;
 use Spatie\LaravelPasskeys\Actions\StorePasskeyAction;
+use Spatie\LaravelPasskeys\Concerns\CanResolveContext;
 use Spatie\LaravelPasskeys\Models\Concerns\HasPasskeys;
 use Spatie\LaravelPasskeys\Support\Config;
 use Throwable;
 
 class PasskeysComponent extends Component
 {
+    use CanResolveContext;
+
     #[Validate('required|string|max:255')]
     public string $name = '';
+
+    #[Locked]
+    public string $context;
 
     public function render(): View
     {
         return view('passkeys::livewire.passkeys', data: [
             'passkeys' => $this->currentUser()->passkeys,
         ]);
+    }
+
+    public function mount(Request $request): void
+    {
+        $this->context = $this->resolveContext($request);
     }
 
     public function validatePasskeyProperties(): void
@@ -41,8 +54,9 @@ class PasskeysComponent extends Component
         try {
             $storePasskeyAction->execute(
                 $this->currentUser(),
-                $passkey, $this->previouslyGeneratedPasskeyOptions(),
-                request()->getHost(),
+                $passkey,
+                $this->previouslyGeneratedPasskeyOptions(),
+                Config::getRelyingParty($this->context)->id,
                 ['name' => $this->name]
             );
         } catch (Throwable $e) {
@@ -62,7 +76,7 @@ class PasskeysComponent extends Component
     public function currentUser(): Authenticatable&HasPasskeys
     {
         /** @var Authenticatable&HasPasskeys $user */
-        $user = auth()->user();
+        $user = auth(Config::getGuard($this->context))->user();
 
         return $user;
     }
@@ -74,9 +88,12 @@ class PasskeysComponent extends Component
 
     protected function generatePasskeyOptions(): string
     {
-        $generatePassKeyOptionsAction = Config::getAction('generate_passkey_register_options', GeneratePasskeyRegisterOptionsAction::class);
+        $generatePassKeyOptionsAction = Config::getAction(
+            'generate_passkey_register_options',
+            GeneratePasskeyRegisterOptionsAction::class
+        );
 
-        $options = $generatePassKeyOptionsAction->execute($this->currentUser());
+        $options = $generatePassKeyOptionsAction->execute($this->currentUser(), $this->context);
 
         session()->put('passkey-registration-options', $options);
 

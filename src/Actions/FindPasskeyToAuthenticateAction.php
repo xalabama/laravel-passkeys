@@ -2,6 +2,7 @@
 
 namespace Spatie\LaravelPasskeys\Actions;
 
+use Illuminate\Database\Eloquent\Builder;
 use Spatie\LaravelPasskeys\Models\Passkey;
 use Spatie\LaravelPasskeys\Support\Config;
 use Spatie\LaravelPasskeys\Support\Serializer;
@@ -17,6 +18,7 @@ class FindPasskeyToAuthenticateAction
     public function execute(
         string $publicKeyCredentialJson,
         string $passkeyOptionsJson,
+        string $context
     ): ?Passkey {
         $publicKeyCredential = $this->determinePublicKeyCredential($publicKeyCredentialJson);
 
@@ -24,7 +26,7 @@ class FindPasskeyToAuthenticateAction
             return null;
         }
 
-        $passkey = $this->findPasskey($publicKeyCredential);
+        $passkey = $this->findPasskey($publicKeyCredential, $context);
 
         if (! $passkey) {
             return null;
@@ -40,6 +42,7 @@ class FindPasskeyToAuthenticateAction
             $publicKeyCredential,
             $passkeyOptions,
             $passkey,
+            $context
         );
 
         if (! $publicKeyCredentialSource) {
@@ -66,17 +69,24 @@ class FindPasskeyToAuthenticateAction
         return $publicKeyCredential;
     }
 
-    protected function findPasskey(PublicKeyCredential $publicKeyCredential): ?Passkey
+    protected function findPasskey(PublicKeyCredential $publicKeyCredential, string $context): ?Passkey
     {
         $passkeyModel = Config::getPassKeyModel();
+        $connection = Config::getConnection($context);
+        $authenticatable = Config::getAuthenticatableModel($context);
 
-        return $passkeyModel::firstWhere('credential_id', mb_convert_encoding($publicKeyCredential->rawId, 'UTF-8'));
+        return $passkeyModel::on($connection)
+            ->firstWhere(function (Builder $query) use ($authenticatable, $publicKeyCredential) {
+                $query->where('authenticatable_type', $authenticatable)
+                    ->where('credential_id', mb_convert_encoding($publicKeyCredential->rawId, 'UTF-8'));
+            });
     }
 
     protected function determinePublicKeyCredentialSource(
         PublicKeyCredential $publicKeyCredential,
         PublicKeyCredentialRequestOptions $passkeyOptions,
         Passkey $passkey,
+        string $context
     ): ?PublicKeyCredentialSource {
         $configureCeremonyStepManagerFactoryAction = Config::getAction(
             'configure_ceremony_step_manager_factory',
@@ -92,7 +102,7 @@ class FindPasskeyToAuthenticateAction
                 publicKeyCredentialSource: $passkey->data,
                 authenticatorAssertionResponse: $publicKeyCredential->response,
                 publicKeyCredentialRequestOptions: $passkeyOptions,
-                host: parse_url(config('app.url'), PHP_URL_HOST),
+                host: Config::getRelyingParty($context)->id,
                 userHandle: null,
             );
         } catch (Throwable) {

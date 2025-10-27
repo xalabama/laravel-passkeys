@@ -15,7 +15,7 @@ beforeEach(function () {
 });
 
 it('can generate options to register a passkey as json', function () {
-    $output = $this->action->execute($this->user);
+    $output = $this->action->execute($this->user, Config::getDefaultContextName());
 
     expect($output)
         ->toBeJson()
@@ -23,7 +23,7 @@ it('can generate options to register a passkey as json', function () {
 });
 
 it('can generate options to register a passkey as an object', function () {
-    $output = $this->action->execute($this->user, asJson: false);
+    $output = $this->action->execute($this->user, Config::getDefaultContextName(), asJson: false);
 
     expect($output)->toBeInstanceOf(PublicKeyCredentialCreationOptions::class);
 });

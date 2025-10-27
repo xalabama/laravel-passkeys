@@ -9,7 +9,7 @@ return new class extends Migration
 {
     public function up()
     {
-        $authModel = config('passkeys.models.authenticatable');
+        $authModel = config('passkeys.models.authenticatable', \Spatie\LaravelPasskeys\Support\Config::getAuthenticatableModel());
 
         if (DB::getDriverName() === 'sqlite') {
             DB::statement('PRAGMA foreign_keys=off;');
