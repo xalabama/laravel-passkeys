@@ -1,6 +1,10 @@
+@props([
+    'route' => 'passkeys.authentication_options',
+])
+
 <script>
     async function authenticateWithPasskey() {
-        const response = await fetch('{{ route('passkeys.authentication_options') }}')
+        const response = await fetch('{{ route($route) }}')
 
         const options = await response.json();
 

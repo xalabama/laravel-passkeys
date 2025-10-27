@@ -10,11 +10,11 @@ use Webauthn\PublicKeyCredentialRequestOptions;
 
 class GeneratePasskeyAuthenticationOptionsAction
 {
-    public function execute(): string
+    public function execute(string $context): string
     {
         $options = new PublicKeyCredentialRequestOptions(
             challenge: Str::random(),
-            rpId: Config::getRelyingPartyId(),
+            rpId: Config::getRelyingParty($context)->id,
             allowCredentials: [],
         );
 

@@ -15,10 +15,11 @@ class GeneratePasskeyRegisterOptionsAction
 {
     public function execute(
         HasPasskeys $authenticatable,
-        bool $asJson = true,
+        string $context,
+        bool $asJson = true
     ): string|PublicKeyCredentialCreationOptions {
         $options = new PublicKeyCredentialCreationOptions(
-            rp: $this->relatedPartyEntity(),
+            rp: $this->relatedPartyEntity($context),
             user: $this->generateUserEntity($authenticatable),
             challenge: $this->challenge(),
             authenticatorSelection: $this->authenticatorSelection(),
@@ -32,8 +33,9 @@ class GeneratePasskeyRegisterOptionsAction
         return $options;
     }
 
-    protected function relatedPartyEntity(): PublicKeyCredentialRpEntity
+    protected function relatedPartyEntity(string $context): PublicKeyCredentialRpEntity
     {
+        $relyingParty = Config::getRelyingParty($context);
         return new PublicKeyCredentialRpEntity(
             name: Config::getRelyingPartyName(),
             id: Config::getRelyingPartyId(),
